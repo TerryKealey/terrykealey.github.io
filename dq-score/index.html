@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DQ Score — POC Simulation (Acne Studios & Allbirds B2B)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap');
+  :root {
+    --green: #008060;
+    --green-light: #95BF47;
+    --green-dark: #004C3F;
+    --lime: #E3F988;
+    --black: #0D0D0D;
+    --white: #FFFFFF;
+    --gray: #6B7177;
+    --warn: #B98900;
+    --danger: #D72C0D;
+    --term-bg: #0a0f0d;
+    --term-border: rgba(0, 128, 96, 0.35);
+    --term-text: #c8e6d9;
+    --term-dim: #5a7a6a;
+    --term-accent: #95BF47;
+    --term-cursor: #008060;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--black);
+    color: var(--white);
+    overflow: hidden;
+    height: 100vh;
+  }
+  .deck { position: relative; width: 100vw; height: 100vh; }
+  .slide {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    padding: 48px 64px 100px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.45s ease, transform 0.45s ease;
+    transform: translateY(10px);
+    overflow-y: auto;
+  }
+  .slide.active { opacity: 1; pointer-events: all; transform: translateY(0); }
+  .mesh {
+    position: fixed; inset: 0; z-index: -1;
+    background:
+      radial-gradient(ellipse at 15% 40%, rgba(0,128,96,0.22) 0%, transparent 55%),
+      radial-gradient(ellipse at 85% 15%, rgba(149,191,71,0.12) 0%, transparent 45%),
+      var(--black);
+  }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; gap: 24px; }
+  .badge {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--lime); background: rgba(0,128,96,0.25);
+    padding: 6px 12px; border-radius: 4px; border: 1px solid rgba(149,191,71,0.35);
+  }
+  h1 {
+    font-size: clamp(26px, 3.5vw, 40px); font-weight: 800; line-height: 1.2; margin-top: 10px;
+    background: linear-gradient(135deg, #fff 0%, var(--green-light) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .meta { font-size: 13px; color: var(--gray); text-align: right; line-height: 1.65; max-width: 280px; }
+  .scores { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 28px; }
+  .score-card {
+    background: linear-gradient(160deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.09) 100%);
+    border: 1px solid rgba(255,255,255,0.28);
+    border-radius: 14px;
+    padding: 28px 24px 24px;
+    box-shadow:
+      0 8px 32px rgba(0,0,0,0.35),
+      inset 0 1px 0 rgba(255,255,255,0.14);
+    position: relative;
+    overflow: hidden;
+  }
+  .score-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--green), var(--green-light));
+    opacity: 0.85;
+  }
+  .score-card.overall {
+    border-color: rgba(149,191,71,0.55);
+    background: linear-gradient(160deg, rgba(255,255,255,0.2) 0%, rgba(0,128,96,0.32) 100%);
+    box-shadow:
+      0 12px 40px rgba(0,128,96,0.25),
+      inset 0 1px 0 rgba(255,255,255,0.2);
+  }
+  .score-card.overall::before {
+    height: 4px;
+    opacity: 1;
+  }
+  .score-card h3 {
+    font-size: 12px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; color: rgba(255,255,255,0.78); margin-bottom: 12px;
+  }
+  .score-value {
+    font-size: 88px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    color: var(--white);
+    text-shadow: 0 2px 20px rgba(0,0,0,0.25);
+  }
+  .score-value span {
+    font-size: 40px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.55);
+    vertical-align: super;
+    margin-left: 2px;
+  }
+  .recommendation {
+    padding: 18px 22px; border-radius: 12px; margin-bottom: 24px;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .recommendation.proceed { background: rgba(0,128,96,0.2); border-color: var(--green); }
+  .recommendation.dq { background: rgba(215,44,13,0.14); border-color: var(--danger); }
+  .rec-label { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.9; }
+  .rec-title { font-size: 21px; font-weight: 700; margin-top: 4px; }
+  .rec-reason { font-size: 15px; line-height: 1.55; color: rgba(255,255,255,0.9); margin-top: 8px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .panel {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px; padding: 18px 20px;
+  }
+  .panel h4 {
+    font-size: 12px; font-weight: 700; color: var(--green-light);
+    margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .panel ul { list-style: none; }
+  .panel li {
+    font-size: 13px; line-height: 1.5; color: rgba(255,255,255,0.82);
+    padding: 7px 0 7px 14px; border-bottom: 1px solid rgba(255,255,255,0.05);
+    position: relative;
+  }
+  .panel li:last-child { border-bottom: none; }
+  .panel li::before {
+    content: ''; position: absolute; left: 0; top: 13px;
+    width: 5px; height: 5px; border-radius: 50%; background: var(--green);
+  }
+  .panel.dq li::before { background: var(--danger); }
+  .sources { margin-top: 20px; font-size: 12px; color: var(--gray); }
+  .sim-note { font-size: 11px; color: var(--warn); margin: 10px 0 16px; font-style: italic; }
+
+  /* Terminal slide */
+  .slide-terminal {
+    justify-content: center;
+    align-items: center;
+    padding: 40px 48px 100px;
+  }
+  .terminal-wrap {
+    width: min(920px, 100%);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 140px);
+  }
+  .terminal-header-row {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 16px; width: 100%;
+  }
+  .terminal-header-row h2 {
+    font-size: 15px; font-weight: 600; color: var(--gray);
+    -webkit-text-fill-color: var(--gray);
+    background: none;
+  }
+  .terminal-window {
+    flex: 1;
+    background: var(--term-bg);
+    border: 1px solid var(--term-border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,128,96,0.08);
+    display: flex;
+    flex-direction: column;
+    min-height: 420px;
+  }
+  .terminal-titlebar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 16px;
+    background: rgba(0,0,0,0.4);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .terminal-dot { width: 12px; height: 12px; border-radius: 50%; }
+  .terminal-dot.r { background: #ff5f57; }
+  .terminal-dot.y { background: #febc2e; }
+  .terminal-dot.g { background: #28c840; }
+  .terminal-titlebar span {
+    flex: 1; text-align: center; font-size: 12px; color: var(--term-dim);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .terminal-body {
+    flex: 1;
+    padding: 20px 22px;
+    font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+    font-size: 13px;
+    line-height: 1.65;
+    color: var(--term-text);
+    overflow-y: auto;
+  }
+  .terminal-body .line {
+    white-space: pre-wrap;
+    word-break: break-word;
+    min-height: 1.65em;
+  }
+  .terminal-body .line.dim { color: var(--term-dim); }
+  .terminal-body .line.accent { color: var(--term-accent); }
+  .terminal-body .line.ok { color: #5cdba0; }
+  .terminal-body .line.warn { color: #e8b84a; }
+  .terminal-body .line.err { color: #f87171; }
+  .terminal-body .line.cmd { color: #fff; }
+  .terminal-body .line.cmd::before { content: '$ '; color: var(--green); }
+  .terminal-body .line.pending .spin::after {
+    content: '';
+    display: inline-block;
+    width: 1ch;
+    animation: blink 0.8s step-end infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+  .terminal-progress {
+    margin-top: 16px;
+    height: 3px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .terminal-progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--green-dark), var(--green-light));
+    transition: width 0.25s ease;
+  }
+  .auto-hint {
+    font-size: 12px; color: var(--term-dim);
+    margin-top: 12px;
+    text-align: center;
+  }
+
+  .nav {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 16px;
+    background: rgba(13,13,13,0.92); border: 1px solid rgba(255,255,255,0.1);
+    padding: 10px 20px; border-radius: 999px; z-index: 10;
+  }
+  .nav button {
+    background: var(--green); color: var(--white); border: none;
+    width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 18px;
+  }
+  .nav button:hover { background: var(--green-light); color: var(--black); }
+  .nav button:disabled { opacity: 0.35; cursor: not-allowed; }
+  .nav span { font-size: 13px; color: var(--gray); min-width: 88px; text-align: center; }
+  .shopify-mark {
+    position: fixed; top: 22px; right: 28px; font-size: 13px; font-weight: 700;
+    color: var(--green-light); z-index: 5;
+  }
+  .shopify-mark::before { content: '◆ '; color: var(--green); }
+  .title-slide { justify-content: center; align-items: center; text-align: center; }
+  .title-slide h1 { font-size: clamp(32px, 5vw, 52px); max-width: 800px; }
+  .title-slide p { color: var(--gray); font-size: 16px; margin-top: 16px; max-width: 560px; line-height: 1.6; }
+  .title-slide .run-id { margin-top: 32px; font-size: 13px; color: var(--green-light); }
+</style>
+</head>
+<body>
+<div class="mesh"></div>
+<div class="shopify-mark">Shopify · DQ Score</div>
+<div class="deck" id="deck">
+
+  <section class="slide title-slide active" data-slide-type="title">
+    <span class="badge">/dq-score · proof of concept</span>
+    <h1>Opportunity Confidence Report</h1>
+    <p>Two simulated skill runs. Terminal slides play automatically, then advance to each scorecard. Use ← → anytime to navigate.</p>
+    <p class="run-id">Generated 17 May 2026 · Skill v0.1 POC</p>
+  </section>
+
+  <!-- ACNE: terminal prelude -->
+  <section class="slide slide-terminal" data-slide-type="terminal" data-run-id="acne" data-auto-advance="true">
+    <div class="terminal-wrap">
+      <div class="terminal-header-row">
+        <span class="badge">Run 1 of 2 · Claude terminal</span>
+        <h2>Simulating /dq-score</h2>
+      </div>
+      <div class="terminal-window">
+        <div class="terminal-titlebar">
+          <span class="terminal-dot r"></span>
+          <span class="terminal-dot y"></span>
+          <span class="terminal-dot g"></span>
+          <span>claude — dq-score</span>
+        </div>
+        <div class="terminal-body" id="term-acne" aria-live="polite"></div>
+      </div>
+      <div class="terminal-progress"><div class="terminal-progress-bar" id="prog-acne"></div></div>
+      <p class="auto-hint" id="hint-acne">Searching sources… report opens when complete</p>
+    </div>
+  </section>
+
+  <!-- ACNE: output -->
+  <section class="slide" data-slide-type="output">
+    <div class="header">
+      <div>
+        <span class="badge">Run 1 of 2 · Results</span>
+        <h1>ACNE Studios — Shopify Plus Evaluation</h1>
+      </div>
+      <div class="meta">
+        SE: Sarah Berelowitz → Enterprise<br>
+        Stage: Active discovery<br>
+        Run: 17 May 2026, 09:14 UTC
+      </div>
+    </div>
+    <div class="scores">
+      <div class="score-card"><h3>Commercial Score</h3><div class="score-value">84<span>%</span></div></div>
+      <div class="score-card"><h3>Technical Fit</h3><div class="score-value">78<span>%</span></div></div>
+      <div class="score-card overall"><h3>Overall Score</h3><div class="score-value">81<span>%</span></div></div>
+    </div>
+    <div class="recommendation proceed">
+      <div class="rec-label">SE recommendation</div>
+      <div class="rec-title">Proceed with confidence</div>
+      <p class="rec-reason">Salesforce Commerce Cloud licensing expires early 2027 and leadership has signaled the full stack is up for grabs, with senior stakeholders engaged onsite in Stockholm and a structured path to architecture and payments sessions.</p>
+    </div>
+    <div class="grid-2">
+      <div class="panel">
+        <h4>Commercial signals</h4>
+        <ul>
+          <li>Dec 18, 2025 onsite at Floragatan 13 — positive sentiment in SE-NTRAL.</li>
+          <li>SFCC contract ends early 2027; Plus evaluation for DTC, multi-store, Asia growth.</li>
+          <li>Enterprise motion with SA assigned; NRF 2026 likely.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h4>Technical fit signals</h4>
+        <ul>
+          <li>27 markets + hybrid B2B/EDI — known Plus playbook.</li>
+          <li>Mulesoft + D365 F&amp;O complex but partner-addressable.</li>
+          <li>China requires second platform — acknowledged in discovery.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="sources">Sources: SE-NTRAL · Gmail · Calendar · Salesforce (partial)</p>
+  </section>
+
+  <!-- ALLBIRDS: terminal prelude -->
+  <section class="slide slide-terminal" data-slide-type="terminal" data-run-id="allbirds" data-auto-advance="true">
+    <div class="terminal-wrap">
+      <div class="terminal-header-row">
+        <span class="badge">Run 2 of 2 · Claude terminal</span>
+        <h2>Simulating /dq-score</h2>
+      </div>
+      <div class="terminal-window">
+        <div class="terminal-titlebar">
+          <span class="terminal-dot r"></span>
+          <span class="terminal-dot y"></span>
+          <span class="terminal-dot g"></span>
+          <span>claude — dq-score</span>
+        </div>
+        <div class="terminal-body" id="term-allbirds" aria-live="polite"></div>
+      </div>
+      <div class="terminal-progress"><div class="terminal-progress-bar" id="prog-allbirds"></div></div>
+      <p class="auto-hint" id="hint-allbirds">Searching sources… report opens when complete</p>
+    </div>
+  </section>
+
+  <!-- ALLBIRDS: output -->
+  <section class="slide" data-slide-type="output">
+    <div class="header">
+      <div>
+        <span class="badge">Run 2 of 2 · Results · Simulated scenario</span>
+        <h1>Allbirds — B2B #Q1</h1>
+      </div>
+      <div class="meta">
+        Opp ID: 006OG00000GhVVZYA3<br>
+        Run: 17 May 2026, 09:18 UTC
+      </div>
+    </div>
+    <div class="scores">
+      <div class="score-card"><h3>Commercial Score</h3><div class="score-value">14<span>%</span></div></div>
+      <div class="score-card"><h3>Technical Fit</h3><div class="score-value">18<span>%</span></div></div>
+      <div class="score-card overall"><h3>Overall Score</h3><div class="score-value">16<span>%</span></div></div>
+    </div>
+    <div class="recommendation dq">
+      <div class="rec-label">SE recommendation</div>
+      <div class="rec-title">Disqualify</div>
+      <p class="rec-reason">Executive strategy has pivoted away from fashion and apparel wholesale toward AI data-center infrastructure; no funded B2B commerce initiative in the next 12 months.</p>
+    </div>
+    <p class="sim-note">Scenario note: AI data-center pivot is simulated for this POC.</p>
+    <div class="grid-2">
+      <div class="panel dq">
+        <h4>Commercial signals</h4>
+        <ul>
+          <li>Capital reallocated from wholesale to data-center / AI infrastructure.</li>
+          <li>No B2B discovery, budget, or buyer identified for 2026.</li>
+        </ul>
+      </div>
+      <div class="panel dq">
+        <h4>Technical fit signals</h4>
+        <ul>
+          <li>Shopify B2B irrelevant to new operating model.</li>
+          <li>EDI / apparel catalog requirements no longer apply.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="sources">Sources: SE-NTRAL · Simulated strategic pivot [POC]</p>
+  </section>
+
+</div>
+
+<div class="nav">
+  <button type="button" id="prev" aria-label="Previous">‹</button>
+  <span id="indicator">1 / 5</span>
+  <button type="button" id="next" aria-label="Next">›</button>
+</div>
+
+<script>
+(function () {
+  const TERMINAL_SCRIPTS = {
+    acne: [
+      { t: 'cmd', text: 'claude skill run /dq-score --opportunity "ACNE Studios - Shopify Plus Evaluation"', delay: 0 },
+      { t: 'dim', text: '', delay: 400 },
+      { t: 'dim', text: 'Loading skill /dq-score v0.1 …', delay: 200 },
+      { t: 'dim', text: 'Connecting to Claude (Shopify enterprise) …', delay: 350 },
+      { t: 'accent', text: '✓ Skill loaded', delay: 300 },
+      { t: 'dim', text: '', delay: 200 },
+      { t: 'accent', text: 'Gathering opportunity context', delay: 250 },
+      { t: 'pending', text: '  → se-ntral .............. search_site "ACNE Studios"', delay: 600 },
+      { t: 'ok', text: '  → se-ntral .............. 12 docs (briefing, TA, onsite 2025-12-18) ✓', delay: 0 },
+      { t: 'pending', text: '  → salesforce ............ Opportunity + Tasks/Events (90d)', delay: 500 },
+      { t: 'ok', text: '  → salesforce ............ stage, team, RecordType ✓', delay: 0 },
+      { t: 'pending', text: '  → gmail ................. threads @acnestudios.com', delay: 450 },
+      { t: 'ok', text: '  → gmail ................. follow-up draft, onsite recap ✓', delay: 0 },
+      { t: 'pending', text: '  → google calendar ....... meetings last 90 days', delay: 450 },
+      { t: 'ok', text: '  → google calendar ....... Dec 15 catch-up, Dec 18 onsite ✓', delay: 0 },
+      { t: 'dim', text: '', delay: 300 },
+      { t: 'dim', text: 'Scoring commercial signals (budget, timeline, stakeholders) …', delay: 550 },
+      { t: 'dim', text: 'Scoring technical fit (Markets, B2B/EDI, ERP, integrations) …', delay: 600 },
+      { t: 'dim', text: '', delay: 200 },
+      { t: 'accent', text: 'Commercial Score:  84%', delay: 350 },
+      { t: 'accent', text: 'Technical Fit:     78%', delay: 300 },
+      { t: 'accent', text: 'Overall Score:     81%  (equal-weight average)', delay: 350 },
+      { t: 'ok', text: 'Recommendation:    Proceed with confidence', delay: 400 },
+      { t: 'dim', text: '', delay: 250 },
+      { t: 'dim', text: 'Rendering HTML report …', delay: 400 },
+      { t: 'ok', text: 'Opening scorecard →', delay: 600 }
+    ],
+    allbirds: [
+      { t: 'cmd', text: 'claude skill run /dq-score --opportunity "Allbirds - B2B #Q1"', delay: 0 },
+      { t: 'dim', text: '', delay: 400 },
+      { t: 'dim', text: 'Loading skill /dq-score v0.1 …', delay: 200 },
+      { t: 'dim', text: 'Connecting to Claude (Shopify enterprise) …', delay: 350 },
+      { t: 'accent', text: '✓ Skill loaded', delay: 300 },
+      { t: 'dim', text: '', delay: 200 },
+      { t: 'accent', text: 'Gathering opportunity context', delay: 250 },
+      { t: 'pending', text: '  → se-ntral .............. search_site "Allbirds B2B"', delay: 600 },
+      { t: 'ok', text: '  → se-ntral .............. opp status, briefing (DTC track) ✓', delay: 0 },
+      { t: 'pending', text: '  → salesforce ............ 006OG00000GhVVZYA3', delay: 500 },
+      { t: 'warn', text: '  → salesforce ............ stage mismatch vs account narrative ⚠', delay: 0 },
+      { t: 'pending', text: '  → gmail ................. executive / strategy threads', delay: 500 },
+      { t: 'ok', text: '  → gmail ................. pivot to AI infra (simulated POC) ✓', delay: 0 },
+      { t: 'pending', text: '  → google calendar ....... B2B stakeholder meetings', delay: 450 },
+      { t: 'err', text: '  → google calendar ....... no meetings in 120d ✗', delay: 0 },
+      { t: 'pending', text: '  → crm activity .......... Salesloft / recent touches', delay: 400 },
+      { t: 'err', text: '  → crm activity .......... no inbound in 90d ✗', delay: 0 },
+      { t: 'dim', text: '', delay: 300 },
+      { t: 'dim', text: 'Scoring commercial signals …', delay: 500 },
+      { t: 'dim', text: 'Scoring technical fit (B2B, EDI, NetSuite wholesale) …', delay: 550 },
+      { t: 'warn', text: '⚠ Strategic pivot: apparel wholesale → AI data centers', delay: 400 },
+      { t: 'dim', text: '', delay: 200 },
+      { t: 'accent', text: 'Commercial Score:  14%', delay: 350 },
+      { t: 'accent', text: 'Technical Fit:     18%', delay: 300 },
+      { t: 'accent', text: 'Overall Score:     16%  (equal-weight average)', delay: 350 },
+      { t: 'err', text: 'Recommendation:    Disqualify', delay: 400 },
+      { t: 'dim', text: '', delay: 250 },
+      { t: 'dim', text: 'Rendering HTML report …', delay: 400 },
+      { t: 'ok', text: 'Opening scorecard →', delay: 600 }
+    ]
+  };
+
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const ind = document.getElementById('indicator');
+  const btnPrev = document.getElementById('prev');
+  const btnNext = document.getElementById('next');
+  let current = 0;
+  let terminalRunId = null;
+  let autoAdvanceTimer = null;
+  let userNavLocked = false;
+
+  function clearTimers() {
+    if (autoAdvanceTimer) { clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null; }
+    if (terminalRunId) { clearTimeout(terminalRunId); terminalRunId = null; }
+  }
+
+  function show(index, opts = {}) {
+    clearTimers();
+    const prev = current;
+    current = ((index % slides.length) + slides.length) % slides.length;
+    slides.forEach((s, j) => s.classList.toggle('active', j === current));
+    ind.textContent = `${current + 1} / ${slides.length}`;
+
+    const slide = slides[current];
+    const isTerminal = slide.dataset.slideType === 'terminal';
+
+    btnPrev.disabled = false;
+    btnNext.disabled = isTerminal && !opts.forceEnableNext;
+
+    if (isTerminal) {
+      runTerminal(slide.dataset.runId, slide);
+    }
+  }
+
+  function runTerminal(runId, slideEl) {
+    const body = slideEl.querySelector('.terminal-body');
+    const prog = slideEl.querySelector('.terminal-progress-bar');
+    const hint = slideEl.querySelector('.auto-hint');
+    const script = TERMINAL_SCRIPTS[runId];
+    if (!body || !script) return;
+
+    body.innerHTML = '';
+    if (prog) prog.style.width = '0%';
+    if (hint) hint.textContent = 'Searching sources… report opens when complete';
+
+    let lineIndex = 0;
+    let elapsed = 0;
+    const totalSteps = script.length;
+
+    function appendLine(entry) {
+      const div = document.createElement('div');
+      div.className = 'line ' + (entry.t || 'dim');
+      if (entry.t === 'cmd') {
+        div.textContent = entry.text;
+      } else if (entry.t === 'pending') {
+        div.innerHTML = entry.text + '<span class="spin">_</span>';
+      } else {
+        div.textContent = entry.text;
+      }
+      body.appendChild(div);
+      body.scrollTop = body.scrollHeight;
+    }
+
+    function replaceLastWith(entry) {
+      const last = body.lastElementChild;
+      if (last && last.classList.contains('pending')) last.remove();
+      appendLine(entry);
+    }
+
+    function scheduleNext() {
+      if (lineIndex >= script.length) {
+        if (prog) prog.style.width = '100%';
+        if (hint) hint.textContent = 'Complete — opening report…';
+        btnNext.disabled = false;
+        autoAdvanceTimer = setTimeout(() => {
+          if (current === slides.indexOf(slideEl)) show(current + 1);
+        }, 900);
+        return;
+      }
+
+      const entry = script[lineIndex];
+      lineIndex++;
+      elapsed++;
+
+      if (prog) prog.style.width = Math.round((lineIndex / totalSteps) * 100) + '%';
+
+      if (entry.t === 'pending') {
+        appendLine(entry);
+        terminalRunId = setTimeout(() => {
+          const next = script[lineIndex];
+          if (next && next.t !== 'pending') {
+            replaceLastWith(next);
+            lineIndex++;
+            elapsed++;
+            if (prog) prog.style.width = Math.round((lineIndex / totalSteps) * 100) + '%';
+          }
+          terminalRunId = setTimeout(scheduleNext, next ? (next.delay || 200) : 200);
+        }, entry.delay || 500);
+      } else {
+        appendLine(entry);
+        terminalRunId = setTimeout(scheduleNext, entry.delay || 200);
+      }
+    }
+
+    terminalRunId = setTimeout(scheduleNext, 300);
+  }
+
+  btnPrev.addEventListener('click', () => {
+    userNavLocked = true;
+    show(current - 1, { forceEnableNext: true });
+  });
+
+  btnNext.addEventListener('click', () => {
+    userNavLocked = true;
+    show(current + 1, { forceEnableNext: true });
+  });
+
+  document.addEventListener('keydown', e => {
+    const slide = slides[current];
+    if (slide.dataset.slideType === 'terminal' && !btnNext.disabled) {
+      if (e.key === 'ArrowRight' || e.key === ' ') {
+        e.preventDefault();
+        show(current + 1, { forceEnableNext: true });
+        return;
+      }
+    }
+    if (e.key === 'ArrowRight' || e.key === ' ') {
+      e.preventDefault();
+      if (!btnNext.disabled) show(current + 1, { forceEnableNext: true });
+    }
+    if (e.key === 'ArrowLeft') show(current - 1, { forceEnableNext: true });
+  });
+
+  // Auto-start first terminal after title (optional gentle intro)
+  setTimeout(() => {
+    if (current === 0 && !userNavLocked) {
+      show(1);
+    }
+  }, 2800);
+
+  show(0);
+})();
+</script>
+</body>
+</html>
