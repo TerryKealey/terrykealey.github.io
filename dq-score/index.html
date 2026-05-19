@@ -244,7 +244,7 @@
     position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
     display: flex; align-items: center; gap: 16px;
     background: rgba(13,13,13,0.92); border: 1px solid rgba(255,255,255,0.1);
-    padding: 10px 20px; border-radius: 999px; z-index: 10;
+    padding: 10px 20px; border-radius: 999px; z-index: 210;
   }
   .nav button {
     background: var(--green); color: var(--white); border: none;
@@ -262,6 +262,36 @@
   .title-slide h1 { font-size: clamp(32px, 5vw, 52px); max-width: 800px; }
   .title-slide p { color: var(--gray); font-size: 16px; margin-top: 16px; max-width: 560px; line-height: 1.6; }
   .title-slide .run-id { margin-top: 32px; font-size: 13px; color: var(--green-light); }
+
+  /* Laser pointer overlay */
+  #laser-canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 200;
+    pointer-events: none;
+  }
+  body.laser-active {
+    cursor: none;
+    user-select: none;
+  }
+  body.laser-active .nav {
+    cursor: pointer;
+  }
+  .laser-hint {
+    position: fixed;
+    bottom: 72px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 0.04em;
+    z-index: 201;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+  }
+  body.laser-active .laser-hint { opacity: 0; }
 </style>
 </head>
 <body>
@@ -476,11 +506,145 @@
 
 </div>
 
+<canvas id="laser-canvas" aria-hidden="true"></canvas>
+<p class="laser-hint">Hold click &amp; drag for laser pointer</p>
+
 <div class="nav">
   <button type="button" id="prev" aria-label="Previous">‹</button>
   <span id="indicator">1 / 7</span>
   <button type="button" id="next" aria-label="Next">›</button>
 </div>
+
+<script>
+(function initLaserPointer() {
+  const canvas = document.getElementById('laser-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let active = false;
+  let points = [];
+  let mx = 0, my = 0;
+  let raf = null;
+
+  function resize() {
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = window.innerWidth * dpr;
+    canvas.height = window.innerHeight * dpr;
+    canvas.style.width = window.innerWidth + 'px';
+    canvas.style.height = window.innerHeight + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  function isInteractiveTarget(el) {
+    return el && el.closest('.nav, button, a, input, textarea, select');
+  }
+
+  function drawDot(x, y, scale) {
+    const s = scale || 1;
+    const glow = ctx.createRadialGradient(x, y, 0, x, y, 28 * s);
+    glow.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+    glow.addColorStop(0.12, 'rgba(255, 60, 60, 1)');
+    glow.addColorStop(0.35, 'rgba(255, 0, 0, 0.55)');
+    glow.addColorStop(0.65, 'rgba(255, 0, 0, 0.12)');
+    glow.addColorStop(1, 'rgba(255, 0, 0, 0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(x, y, 28 * s, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(x, y, 3.5 * s, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = 'rgba(255, 120, 120, 0.9)';
+    ctx.lineWidth = 1.5 * s;
+    ctx.beginPath();
+    ctx.arc(x, y, 8 * s, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  function drawTrail() {
+    if (points.length < 2) return;
+    for (let i = 1; i < points.length; i++) {
+      const p0 = points[i - 1];
+      const p1 = points[i];
+      const t = i / points.length;
+      const alpha = p1.a * (0.15 + t * 0.85);
+      ctx.strokeStyle = `rgba(255, 40, 40, ${alpha})`;
+      ctx.lineWidth = 2 + t * 5;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.shadowColor = 'rgba(255, 0, 0, 0.8)';
+      ctx.shadowBlur = 12 * t;
+      ctx.beginPath();
+      ctx.moveTo(p0.x, p0.y);
+      ctx.lineTo(p1.x, p1.y);
+      ctx.stroke();
+    }
+    ctx.shadowBlur = 0;
+  }
+
+  function render() {
+    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    const now = Date.now();
+    points = points.filter(p => now - p.t < 1200);
+    for (let i = 0; i < points.length; i++) {
+      const age = (now - points[i].t) / 1200;
+      points[i].a = Math.max(0, 1 - age);
+    }
+    drawTrail();
+    if (active) drawDot(mx, my, 1);
+    else if (points.length) {
+      const last = points[points.length - 1];
+      drawDot(last.x, last.y, 0.7 * last.a);
+    }
+    if (active || points.some(p => p.a > 0.02)) {
+      raf = requestAnimationFrame(render);
+    } else {
+      raf = null;
+    }
+  }
+
+  function startLoop() {
+    if (!raf) raf = requestAnimationFrame(render);
+  }
+
+  function addPoint(x, y) {
+    points.push({ x, y, t: Date.now(), a: 1 });
+    if (points.length > 120) points.shift();
+  }
+
+  document.addEventListener('mousedown', e => {
+    if (e.button !== 0 || isInteractiveTarget(e.target)) return;
+    active = true;
+    mx = e.clientX;
+    my = e.clientY;
+    points = [{ x: mx, y: my, t: Date.now(), a: 1 }];
+    document.body.classList.add('laser-active');
+    startLoop();
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!active) return;
+    mx = e.clientX;
+    my = e.clientY;
+    addPoint(mx, my);
+    startLoop();
+  });
+
+  function endLaser() {
+    if (!active) return;
+    active = false;
+    document.body.classList.remove('laser-active');
+    startLoop();
+  }
+
+  document.addEventListener('mouseup', endLaser);
+  document.addEventListener('mouseleave', endLaser);
+})();
+</script>
 
 <script>
 (function () {
