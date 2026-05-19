@@ -116,6 +116,7 @@
     border: 1px solid rgba(255,255,255,0.1);
   }
   .recommendation.proceed { background: rgba(0,128,96,0.2); border-color: var(--green); }
+  .recommendation.hold { background: rgba(185,137,0,0.18); border-color: var(--warn); }
   .recommendation.dq { background: rgba(215,44,13,0.14); border-color: var(--danger); }
   .rec-label { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.9; }
   .rec-title { font-size: 21px; font-weight: 700; margin-top: 4px; }
@@ -141,6 +142,7 @@
     width: 5px; height: 5px; border-radius: 50%; background: var(--green);
   }
   .panel.dq li::before { background: var(--danger); }
+  .panel.hold li::before { background: var(--warn); }
   .sources { margin-top: 20px; font-size: 12px; color: var(--gray); }
   .sim-note { font-size: 11px; color: var(--warn); margin: 10px 0 16px; font-style: italic; }
 
@@ -270,7 +272,7 @@
   <section class="slide title-slide active" data-slide-type="title">
     <span class="badge">/dq-score · proof of concept</span>
     <h1>Opportunity Confidence Report</h1>
-    <p>Two simulated skill runs. Press → to begin. Terminal slides play automatically, then advance to each scorecard.</p>
+    <p>Three simulated skill runs. Press → to begin. Terminal slides play automatically, then advance to each scorecard.</p>
     <p class="run-id">Generated 17 May 2026 · Skill v0.1 POC</p>
   </section>
 
@@ -278,7 +280,7 @@
   <section class="slide slide-terminal" data-slide-type="terminal" data-run-id="acne" data-auto-advance="true">
     <div class="terminal-wrap">
       <div class="terminal-header-row">
-        <span class="badge">Run 1 of 2 · Claude terminal</span>
+        <span class="badge">Run 1 of 3 · Claude terminal</span>
         <h2>Simulating /dq-score</h2>
       </div>
       <div class="terminal-window">
@@ -299,7 +301,7 @@
   <section class="slide" data-slide-type="output">
     <div class="header">
       <div>
-        <span class="badge">Run 1 of 2 · Results</span>
+        <span class="badge">Run 1 of 3 · Results</span>
         <h1>ACNE Studios — Shopify Plus Evaluation</h1>
       </div>
       <div class="meta">
@@ -343,7 +345,7 @@
   <section class="slide slide-terminal" data-slide-type="terminal" data-run-id="allbirds" data-auto-advance="true">
     <div class="terminal-wrap">
       <div class="terminal-header-row">
-        <span class="badge">Run 2 of 2 · Claude terminal</span>
+        <span class="badge">Run 2 of 3 · Claude terminal</span>
         <h2>Simulating /dq-score</h2>
       </div>
       <div class="terminal-window">
@@ -364,7 +366,7 @@
   <section class="slide" data-slide-type="output">
     <div class="header">
       <div>
-        <span class="badge">Run 2 of 2 · Results · Simulated scenario</span>
+        <span class="badge">Run 2 of 3 · Results · Simulated scenario</span>
         <h1>Allbirds — B2B #Q1</h1>
       </div>
       <div class="meta">
@@ -402,11 +404,81 @@
     <p class="sources">Sources: SE-NTRAL · Simulated strategic pivot [POC]</p>
   </section>
 
+  <!-- FILIPPA K: terminal prelude -->
+  <section class="slide slide-terminal" data-slide-type="terminal" data-run-id="filippak" data-auto-advance="true">
+    <div class="terminal-wrap">
+      <div class="terminal-header-row">
+        <span class="badge">Run 3 of 3 · Claude terminal</span>
+        <h2>Simulating /dq-score</h2>
+      </div>
+      <div class="terminal-window">
+        <div class="terminal-titlebar">
+          <span class="terminal-dot r"></span>
+          <span class="terminal-dot y"></span>
+          <span class="terminal-dot g"></span>
+          <span>claude — dq-score</span>
+        </div>
+        <div class="terminal-body" id="term-filippak" aria-live="polite"></div>
+      </div>
+      <div class="terminal-progress"><div class="terminal-progress-bar" id="prog-filippak"></div></div>
+      <p class="auto-hint" id="hint-filippak">Searching sources… report opens when complete</p>
+    </div>
+  </section>
+
+  <!-- FILIPPA K: output -->
+  <section class="slide" data-slide-type="output">
+    <div class="header">
+      <div>
+        <span class="badge">Run 3 of 3 · Results · Fabricated scenario</span>
+        <h1>Filippa K — B2B Wholesale Portal</h1>
+      </div>
+      <div class="meta">
+        Opp ID: 006OG00000Kx2mYAB (simulated)<br>
+        Stage: Discovery (early)<br>
+        Run: 19 May 2026, 14:02 UTC
+      </div>
+    </div>
+    <div class="scores">
+      <div class="score-card"><h3>Commercial Score</h3><div class="score-value">36<span>%</span></div></div>
+      <div class="score-card"><h3>Technical Fit</h3><div class="score-value">72<span>%</span></div></div>
+      <div class="score-card overall"><h3>Overall Score</h3><div class="score-value">54<span>%</span></div></div>
+    </div>
+    <div class="recommendation hold">
+      <div class="rec-label">SE recommendation</div>
+      <div class="rec-title">Hold until AE confirms buying signals</div>
+      <p class="rec-reason">Technical fit is solid for wholesale on Plus, but the merchant has not committed on timeline or budget, and has not supplied a concrete list of goals or pain points needed to build a credible demo. Pause SE prep until the AE secures written discovery outcomes and a scheduled stakeholder workshop.</p>
+    </div>
+    <p class="sim-note">Fabricated opportunity for POC — not sourced from SE-NTRAL or Salesforce.</p>
+    <div class="grid-2">
+      <div class="panel hold">
+        <h4>Commercial risks</h4>
+        <ul>
+          <li>Timeline described as “sometime next year” with no migration window or board approval path.</li>
+          <li>Budget “under internal review” — no range, sponsor, or procurement contact named.</li>
+          <li>Two intro calls only; no economic buyer or IT stakeholder on calendar.</li>
+          <li>AE notes: “interested in seeing Shopify” but no RFP criteria or success metrics shared.</li>
+          <li>No written pain points or objectives — demo scope cannot be anchored yet.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h4>Technical fit signals</h4>
+        <ul>
+          <li>~$95M DTC on legacy platform; B2B ~30% of revenue via phone/email — strong Shopify B2B candidate.</li>
+          <li>Company accounts, seasonal price lists, Net 30 terms, Business Central via Celigo — standard Plus patterns.</li>
+          <li>~400 wholesale doors; EDI for 3 key retailers can stay on ERP while portal handles long-tail buyers.</li>
+          <li>EU + US entities — Shopify Markets + multi-entity payments feasible with scoping.</li>
+          <li>No hard product ceiling identified; headless not required for phase 1.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="sources">Sources: Simulated AE notes, discovery call summary [POC] · SE-NTRAL ○ · Salesforce ○</p>
+  </section>
+
 </div>
 
 <div class="nav">
   <button type="button" id="prev" aria-label="Previous">‹</button>
-  <span id="indicator">1 / 5</span>
+  <span id="indicator">1 / 7</span>
   <button type="button" id="next" aria-label="Next">›</button>
 </div>
 
@@ -468,6 +540,37 @@
       { t: 'accent', text: 'Technical Fit:     18%', delay: 300 },
       { t: 'accent', text: 'Overall Score:     16%  (equal-weight average)', delay: 350 },
       { t: 'err', text: 'Recommendation:    Disqualify', delay: 400 },
+      { t: 'dim', text: '', delay: 250 },
+      { t: 'dim', text: 'Rendering HTML report …', delay: 400 },
+      { t: 'ok', text: 'Opening scorecard →', delay: 600 }
+    ],
+    filippak: [
+      { t: 'cmd', text: 'claude skill run /dq-score --opportunity "Filippa K - B2B Wholesale Portal"', delay: 0 },
+      { t: 'dim', text: '', delay: 400 },
+      { t: 'dim', text: 'Loading skill /dq-score v0.1 …', delay: 200 },
+      { t: 'dim', text: 'Connecting to Claude (Shopify enterprise) …', delay: 350 },
+      { t: 'accent', text: '✓ Skill loaded', delay: 300 },
+      { t: 'dim', text: '', delay: 200 },
+      { t: 'accent', text: 'Gathering opportunity context', delay: 250 },
+      { t: 'pending', text: '  → se-ntral .............. search_site "Filippa K B2B"', delay: 600 },
+      { t: 'warn', text: '  → se-ntral .............. no merchant folder found ⚠', delay: 0 },
+      { t: 'pending', text: '  → salesforce ............ 006OG00000Kx2mYAB (simulated)', delay: 500 },
+      { t: 'warn', text: '  → salesforce ............ Stage: Discovery · Amount: TBD ⚠', delay: 0 },
+      { t: 'pending', text: '  → gmail ................. AE forwarded intro threads', delay: 450 },
+      { t: 'ok', text: '  → gmail ................. 2 calls; no pain-point doc attached ✓', delay: 0 },
+      { t: 'pending', text: '  → google calendar ....... stakeholder meetings', delay: 450 },
+      { t: 'warn', text: '  → google calendar ....... no follow-up booked post-intro ⚠', delay: 0 },
+      { t: 'pending', text: '  → crm activity .......... tasks & next steps', delay: 400 },
+      { t: 'warn', text: '  → crm activity .......... NextStep: "Send overview deck" (vague) ⚠', delay: 0 },
+      { t: 'dim', text: '', delay: 300 },
+      { t: 'dim', text: 'Scoring commercial signals (budget, timeline, goals) …', delay: 550 },
+      { t: 'warn', text: '⚠ Missing: committed timeline, budget band, demo objectives', delay: 450 },
+      { t: 'dim', text: 'Scoring technical fit (B2B, ERP, wholesale, Markets) …', delay: 600 },
+      { t: 'dim', text: '', delay: 200 },
+      { t: 'accent', text: 'Commercial Score:  36%', delay: 350 },
+      { t: 'accent', text: 'Technical Fit:     72%', delay: 300 },
+      { t: 'accent', text: 'Overall Score:     54%  (equal-weight average)', delay: 350 },
+      { t: 'warn', text: 'Recommendation:    Hold until AE confirms buying signals', delay: 450 },
       { t: 'dim', text: '', delay: 250 },
       { t: 'dim', text: 'Rendering HTML report …', delay: 400 },
       { t: 'ok', text: 'Opening scorecard →', delay: 600 }
