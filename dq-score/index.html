@@ -270,7 +270,7 @@
   <section class="slide title-slide active" data-slide-type="title">
     <span class="badge">/dq-score · proof of concept</span>
     <h1>Opportunity Confidence Report</h1>
-    <p>Two simulated skill runs. Terminal slides play automatically, then advance to each scorecard. Use ← → anytime to navigate.</p>
+    <p>Two simulated skill runs. Press → to begin. Terminal slides play automatically, then advance to each scorecard.</p>
     <p class="run-id">Generated 17 May 2026 · Skill v0.1 POC</p>
   </section>
 
@@ -604,13 +604,6 @@
     }
     if (e.key === 'ArrowLeft') show(current - 1, { forceEnableNext: true });
   });
-
-  // Auto-start first terminal after title (optional gentle intro)
-  setTimeout(() => {
-    if (current === 0 && !userNavLocked) {
-      show(1);
-    }
-  }, 2800);
 
   show(0);
 })();
